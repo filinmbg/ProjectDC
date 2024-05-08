@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, Boolean, func, Table, Enum
 import enum
-
+from django.db import models
 from sqlalchemy.orm import relationship, declarative_base
 from sqlalchemy.sql.schema import ForeignKey
 from sqlalchemy.sql.sqltypes import DateTime
@@ -19,23 +19,45 @@ image_m2m_tag = Table(
 class Role(enum.Enum):
     __tablename__ = "users_roles"
     admin: str = "admin"
-    moderator: str = "moderator"
+    guest: str = "guest"
     user: str = "user"
 
 
-class User(Base):
-    __tablename__ = "users"
-    id = Column(Integer, primary_key=True)
-    username = Column(String(50), nullable=False, unique=True)
-    email = Column(String(45), nullable=False, unique=True)
-    password = Column(String(150), nullable=False)
-    avatar = Column(String(255), nullable=False)
-    created_at = Column("created_at", DateTime, default=func.now())
-    updated_at = Column("updated_at", DateTime, default=func.now(), onupdate=func.now())
-    refresh_token = Column(String(255))
-    forbidden = Column(Boolean, default=False)
-    role = Column("role", Enum(Role), default=Role.user)
-    images = relationship("Image", backref="users")
-    user_image = Column(String(255), nullable=True)
 
 
+class User(models.Model):
+    id = models.AutoField(primary_key=True)
+    first_name = models.CharField(max_length=100)
+    last_name = models.CharField(max_length=100)
+    address = models.CharField(max_length=255)
+    phone_number = models.CharField(max_length=15)
+    email = models.EmailField()
+
+
+class Vehicle(models.Model):
+    id = models.AutoField(primary_key=True)
+    make_and_model = models.CharField(max_length=255)
+    year = models.IntegerField()
+    license_plate = models.CharField(max_length=20)
+    owner = models.ForeignKey(User, on_delete=models.CASCADE)
+
+class ParkingSpot(models.Model):
+    id = models.AutoField(primary_key=True)
+    spot_number = models.CharField(max_length=10)
+    status = models.CharField(max_length=20, choices=[('free', 'Вільне'), ('occupied', 'Зайняте')])
+    spot_type = models.CharField(max_length=20)
+
+class MovementLog(models.Model):
+    id = models.AutoField(primary_key=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    vehicle = models.ForeignKey(Vehicle, on_delete=models.CASCADE)
+    entry_time = models.DateTimeField()
+    exit_time = models.DateTimeField(null=True, blank=True)
+    parking_spot = models.ForeignKey(ParkingSpot, on_delete=models.SET_NULL, null=True, blank=True)
+    status = models.CharField(max_length=10, choices=[("entry", "В'їзд"), ("exit", "Виїзд")])
+
+class Payment(models.Model):
+    id = models.AutoField(primary_key=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    payment_datetime = models.DateTimeField()
