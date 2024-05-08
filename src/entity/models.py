@@ -1,70 +1,76 @@
-from sqlalchemy import Column, Integer, String, Boolean, func, Table, Enum
-import enum
-from django.db import models
-from sqlalchemy.orm import relationship, declarative_base
-from sqlalchemy.sql.schema import ForeignKey
-from sqlalchemy.sql.sqltypes import DateTime
+from enum import Enum
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime, Enum as SQLEnum
+from sqlalchemy.orm import relationship
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.sql import func
+from sqlalchemy_utils import EmailType
 
 Base = declarative_base()
 
-image_m2m_tag = Table(
-    "image_m2m_tag",
-    Base.metadata,
-    Column("id", Integer, primary_key=True),
-    Column("image_id", Integer, ForeignKey("images.id", ondelete="CASCADE")),
-    Column("tag_id", Integer, ForeignKey("tags.id", ondelete="CASCADE")),
-)
+class Role(Enum):
+    admin = "admin"
+    guest = "guest"
+    user = "user"
 
+class User(Base):
+    __tablename__ = "users"
 
-class Role(enum.Enum):
-    __tablename__ = "users_roles"
-    admin: str = "admin"
-    guest: str = "guest"
-    user: str = "user"
+    id = Column(Integer, primary_key=True, index=True)
+    first_name = Column(String(100))
+    last_name = Column(String(100))
+    address = Column(String(255))
+    phone_number = Column(String(15))
+    email = Column(EmailType, unique=True, index=True)
+    is_blocked = Column(Boolean, default=False)
 
+class Vehicle(Base):
+    __tablename__ = "vehicles"
 
+    id = Column(Integer, primary_key=True, index=True)
+    plate = Column(String(20), unique=True, index=True)
+    brand = Column(String(100))
+    model = Column(String(100))
+    year = Column(Integer)
+    color = Column(String(50))
+    body = Column(String(50))
+    plate_photo = Column(String(255), nullable=True)
+    is_blocked = Column(Boolean, default=False)
 
-
-class User(models.Model):
-    id = models.AutoField(primary_key=True)
-    first_name = models.CharField(max_length=100)
-    last_name = models.CharField(max_length=100)
-    address = models.CharField(max_length=255)
-    phone_number = models.CharField(max_length=15)
-    email = models.EmailField()
-
-
-class Vehicle(models.Model):
-    plate = models.CharField(max_length=20)
-    brand = models.CharField(max_length=100)
-    model = models.CharField(max_length=100)
-    year = models.IntegerField()
-    color = models.CharField(max_length=50)
-    body = models.CharField(max_length=50)
-    plate_photo = models.ImageField(upload_to='plate_photos/', null=True, blank=True)
-
-    owner = models.ForeignKey('User', on_delete=models.CASCADE)
+    owner_id = Column(Integer, ForeignKey("users.id"))
+    owner = relationship("User", back_populates="vehicles")
 
     def __str__(self):
         return f"{self.brand} {self.model} ({self.year})"
 
-class ParkingSpot(models.Model):
-    id = models.AutoField(primary_key=True)
-    spot_number = models.CharField(max_length=10)
-    status = models.CharField(max_length=20, choices=[('free', 'Вільне'), ('occupied', 'Зайняте')])
-    spot_type = models.CharField(max_length=20)
+class ParkingSpot(Base):
+    __tablename__ = "parking_spots"
 
-class MovementLog(models.Model):
-    id = models.AutoField(primary_key=True)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    vehicle = models.ForeignKey(Vehicle, on_delete=models.CASCADE)
-    entry_time = models.DateTimeField()
-    exit_time = models.DateTimeField(null=True, blank=True)
-    parking_spot = models.ForeignKey(ParkingSpot, on_delete=models.SET_NULL, null=True, blank=True)
-    status = models.CharField(max_length=10, choices=[("entry", "В'їзд"), ("exit", "Виїзд")])
+    id = Column(Integer, primary_key=True, index=True)
+    spot_number = Column(String(10), unique=True, index=True)
+    status = Column(String(20), default="free")
+    spot_type = Column(String(20))
 
-class Payment(models.Model):
-    id = models.AutoField(primary_key=True)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    amount = models.DecimalField(max_digits=10, decimal_places=2)
-    payment_datetime = models.DateTimeField()
+class MovementLog(Base):
+    __tablename__ = "movement_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    vehicle_id = Column(Integer, ForeignKey("vehicles.id"))
+    entry_time = Column(DateTime, default=func.now())
+    exit_time = Column(DateTime, nullable=True)
+    parking_spot_id = Column(Integer, ForeignKey("parking_spots.id"), nullable=True)
+    status = Column(String(10))
+
+class Payment(Base):
+    __tablename__ = "payments"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    amount = Column(Integer)
+    payment_datetime = Column(DateTime, default=func.now())
+
+User.vehicles = relationship("Vehicle", back_populates="owner")
+User.payments = relationship("Payment", back_populates="user")
+Vehicle.owner = relationship("User", back_populates="vehicles")
+ParkingSpot.logs = relationship("MovementLog", back_populates="parking_spot")
+User.logs = relationship("MovementLog", back_populates="user")
