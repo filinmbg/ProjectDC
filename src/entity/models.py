@@ -35,11 +35,18 @@ class User(models.Model):
 
 
 class Vehicle(models.Model):
-    id = models.AutoField(primary_key=True)
-    make_and_model = models.CharField(max_length=255)
+    plate = models.CharField(max_length=20)
+    brand = models.CharField(max_length=100)
+    model = models.CharField(max_length=100)
     year = models.IntegerField()
-    license_plate = models.CharField(max_length=20)
-    owner = models.ForeignKey(User, on_delete=models.CASCADE)
+    color = models.CharField(max_length=50)
+    body = models.CharField(max_length=50)
+    plate_photo = models.ImageField(upload_to='plate_photos/', null=True, blank=True)
+
+    owner = models.ForeignKey('User', on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"{self.brand} {self.model} ({self.year})"
 
 class ParkingSpot(models.Model):
     id = models.AutoField(primary_key=True)
