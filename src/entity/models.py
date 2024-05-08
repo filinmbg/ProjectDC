@@ -19,23 +19,33 @@ image_m2m_tag = Table(
 class Role(enum.Enum):
     __tablename__ = "users_roles"
     admin: str = "admin"
-    moderator: str = "moderator"
+    guest: str = "guest"
     user: str = "user"
 
 
 class User(Base):
     __tablename__ = "users"
-    id = Column(Integer, primary_key=True)
+    id_user = Column(Integer, primary_key=True)
     username = Column(String(50), nullable=False, unique=True)
     email = Column(String(45), nullable=False, unique=True)
+    phonenumber = Column(String(12), nullable=False, unique=True)
     password = Column(String(150), nullable=False)
-    avatar = Column(String(255), nullable=False)
-    created_at = Column("created_at", DateTime, default=func.now())
-    updated_at = Column("updated_at", DateTime, default=func.now(), onupdate=func.now())
-    refresh_token = Column(String(255))
     forbidden = Column(Boolean, default=False)
     role = Column("role", Enum(Role), default=Role.user)
-    images = relationship("Image", backref="users")
-    user_image = Column(String(255), nullable=True)
+    id_car = Column(String(12), nullable=False, unique=True)
 
+class Vehicles(Base):
+    __tablename__ = "users"
+    id_car = Column(Integer, primary_key=True)
+    licenseplate = Column(Integer, primary_key=True)
+    model = Column(String(50), nullable=False, unique=True)
+    year = Column(String(4), nullable=False, unique=True)
+    id_user = Column(String(20), nullable=True, unique=True)
+    blocked = Column(Boolean, default=False)
 
+class Parking(Base):
+    id_parking = Column(Integer, primary_key=True)
+    numbers = Column(String(10), unique=True)
+
+class Registration(Base):
+    id_regist = Column(Integer, primary_key=True)
