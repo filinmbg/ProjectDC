@@ -47,7 +47,7 @@ async def login(body: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = 
     if not auth_service.verify_password(body.password, user.password):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid password")
     # Generate JWT
-    access_token = await auth_service.create_access_token(data={"sub": user.email, "test": "Сергій Багмет"})
+    access_token = await auth_service.create_access_token(data={"sub": user.email, "test": "test"})
     refresh_token = await auth_service.create_refresh_token(data={"sub": user.email})
     await repositories_users.update_token(user, refresh_token, db)
     return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer"}
