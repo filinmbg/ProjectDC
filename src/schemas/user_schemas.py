@@ -12,9 +12,11 @@ class UserSchema(BaseModel):
 class UserResponse(BaseModel):
     id: int = 1
     username: str
+    address: str
+    phone_number: str
     email: EmailStr
-    avatar: str
     role: Role
+    is_blocked: bool
 
     class Config:
         from_attributes = True
