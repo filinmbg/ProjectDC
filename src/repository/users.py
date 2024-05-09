@@ -33,12 +33,6 @@ async def create_user(body: UserSchema, db: AsyncSession = Depends(get_db)):
     :return: A user object
     :doc-author: Trelent
     """
-    avatar = None
-    try:
-        g = Gravatar(body.email)
-        avatar = g.get_image()
-    except Exception as err:
-        print(err)
 
     user_admin = await db.execute(select(User).limit(1))
     user_obj = user_admin.scalars().first()
@@ -48,7 +42,7 @@ async def create_user(body: UserSchema, db: AsyncSession = Depends(get_db)):
     else:
         role = Role.user
 
-    new_user = User(**body.model_dump(), avatar=avatar, role=role)
+    new_user = User(**body.model_dump(), role=role)
     db.add(new_user)
     await db.commit()
     await db.refresh(new_user)
