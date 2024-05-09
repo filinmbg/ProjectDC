@@ -19,10 +19,9 @@ class Settings(BaseSettings):
     # CLD_NAME: str = 'photoshare'
     # CLD_API_KEY: int = 326488457974591
     # CLD_API_SECRET: str = "secret"
-    # CLOUDINARY_NAME: str = "dknkinnlb"
-    # CLOUDINARY_API_KEY: int = 763413813135315
-    # CLOUDINARY_API_SECRET: str = "yhMztWViP9KNz7uH71tF2zgTQ_I"
-    # MAX_TAGS_COUNT: int = 5
+    CLOUDINARY_NAME: str = "dv5twoh7a"
+    CLOUDINARY_API_KEY: int = 364681612839296
+    CLOUDINARY_API_SECRET: str = "qvIQgRo62bsyu-6OmGdcXTB3Oh8"
 
     @field_validator("ALGORITHM")
     @classmethod
