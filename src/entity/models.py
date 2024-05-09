@@ -19,11 +19,16 @@ class User(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String(100), nullable=False, unique=True)
+    password = Column(String(150), nullable=False)
     address = Column(String(255))
     phone_number = Column(String(15))
     email = Column(EmailType, unique=True, index=True)
     role = Column("role", Enum(Role), default=Role.user)
     is_blocked = Column(Boolean, default=False)
+
+    vehicles = relationship("Vehicle", back_populates="owner")
+    payments = relationship("Payment", back_populates="user")
+    logs = relationship("MovementLog", back_populates="user")
 
 
 class Vehicle(Base):
@@ -42,6 +47,8 @@ class Vehicle(Base):
     owner_id = Column(Integer, ForeignKey("users.id"))
     owner = relationship("User", back_populates="vehicles")
 
+    logs = relationship("MovementLog", back_populates="vehicle")
+
     def __str__(self):
         return f"{self.brand} {self.model} ({self.year})"
 
@@ -53,6 +60,8 @@ class ParkingSpot(Base):
     spot_number = Column(String(10), unique=True, index=True)
     status = Column(String(20), default="free")
     spot_type = Column(String(20))
+
+    logs = relationship("MovementLog", back_populates="parking_spot")
 
 
 class MovementLog(Base):
@@ -66,6 +75,10 @@ class MovementLog(Base):
     parking_spot_id = Column(Integer, ForeignKey("parking_spots.id"), nullable=True)
     status = Column(String(10))
 
+    user = relationship("User", back_populates="logs")
+    vehicle = relationship("Vehicle", back_populates="logs")
+    parking_spot = relationship("ParkingSpot", back_populates="logs")
+
 
 class Payment(Base):
     __tablename__ = "payments"
@@ -75,9 +88,4 @@ class Payment(Base):
     amount = Column(Integer)
     payment_datetime = Column(DateTime, default=func.now())
 
-
-User.vehicles = relationship("Vehicle", back_populates="owner")
-User.payments = relationship("Payment", back_populates="user")
-Vehicle.owner = relationship("User", back_populates="vehicles")
-ParkingSpot.logs = relationship("MovementLog", back_populates="parking_spot")
-User.logs = relationship("MovementLog", back_populates="user")
+    user = relationship("User", back_populates="payments")
