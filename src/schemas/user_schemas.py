@@ -12,10 +12,8 @@ class UserSchema(BaseModel):
 class UserResponse(BaseModel):
     id: int = 1
     username: str
-    password: str
     email: EmailStr
     role: Role
-    is_blocked: bool
 
     class Config:
         from_attributes = True
@@ -25,3 +23,15 @@ class TokenSchema(BaseModel):
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
+
+
+class UpdateProfileSchema(BaseModel):
+    username: str = Field(min_length=3, max_length=50)
+    email: EmailStr
+
+
+class ProfileSchema(BaseModel):
+    username: str
+    email: EmailStr
+    plate: str
+    is_blocked: bool

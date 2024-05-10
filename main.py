@@ -8,7 +8,7 @@ from sqlalchemy import text
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.database.db import get_db
-from src.routes import auth_routes, vehicles_routes
+from src.routes import auth_routes, vehicles_routes, user_routes
 import time
 
 import pathlib
@@ -60,4 +60,5 @@ async def healthchecker(db: AsyncSession = Depends(get_db)):
 
 app.include_router(auth_routes.router, prefix="/api")
 app.include_router(vehicles_routes.router)
+app.include_router(user_routes.router)
 
