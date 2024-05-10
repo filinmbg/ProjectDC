@@ -9,7 +9,6 @@ import cv2
 from tensorflow.keras.models import load_model
 from src.conf.config import config
 
-os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 # Визначення шляхів для завантаження ресурсів
 models_file_path = 'src/models'
 file_model = 'ua-license-plate-recognition-model-37x.h5'
@@ -240,7 +239,6 @@ async def get_car_info_by_license_plate(license_plate):
         # Перевіряємо, чи отримали ми успішну відповідь
         if response.status_code == 200:
             data = response.json()
-            print(data)
             car_info_by_license_plate = {
                 'plate': license_plate,
                 'brand': data["vendor"],

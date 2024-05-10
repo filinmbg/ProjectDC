@@ -11,3 +11,4 @@ class VehicleCreate(BaseModel):
     body: str
     plate_photo: Optional[str] = None
     is_blocked: Optional[bool] = False
+    owner_id: int
