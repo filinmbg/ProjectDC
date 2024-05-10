@@ -20,8 +20,6 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String(100), nullable=False, unique=True)
     password = Column(String(150), nullable=False)
-    address = Column(String(255))
-    phone_number = Column(String(15))
     email = Column(EmailType, unique=True, index=True)
     role = Column("role", Enum(Role), default=Role.user)
     is_blocked = Column(Boolean, default=False)
