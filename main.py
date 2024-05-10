@@ -1,7 +1,9 @@
 from fastapi import FastAPI, Depends, HTTPException, Request
-
+from fastapi.responses import FileResponse
 from fastapi.responses import HTMLResponse, JSONResponse
 
+from Project_DC.src.schemas.vehicles_schemas import ParkingRecord
+from src import schemas
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
@@ -10,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.database.db import get_db
 from src.routes import auth_routes, vehicles_routes
 import time
-
+from datetime import datetime
 import pathlib
 
 
@@ -60,4 +62,22 @@ async def healthchecker(db: AsyncSession = Depends(get_db)):
 
 app.include_router(auth_routes.router, prefix="/api")
 app.include_router(vehicles_routes.router)
+
+@app.post("/parking_record/")
+async def add_parking_record(record: ParkingRecord, parking_records=None):
+    parking_records.append(record)
+    if record.total_cost > 100 and not record.notified:
+        # Send notification to user
+        # Example: send_notification(record.user_id, "Parking costs exceeded the limit.")
+        record.notified = True
+    return {"message": "Parking record added successfully"}
+
+@app.get("/generate_report/")
+async def generate_report():
+    report_data = "\n".join([f"{record.user_id},{record.license_plate},{record.entry_time},{record.exit_time},{record.total_cost}" for record in parking_records])
+    file_name = "parking_report.csv"
+    with open(file_name, "w") as f:
+        f.write("User ID,License Plate,Entry Time,Exit Time,Total Cost\n")
+        f.write(report_data)
+    return FileResponse(file_name)
 
