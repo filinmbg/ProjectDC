@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import cv2
 from tensorflow.keras.models import load_model
+from src.conf.config import config
 
 os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 # Визначення шляхів для завантаження ресурсів
@@ -231,22 +232,22 @@ def get_num_avto(img_avto):
 ################################################################################
 async def get_car_info_by_license_plate(license_plate):
     # URL сервісу, який повертає інформацію по номерному знаку
-    url = f"https://checkcar.com.ua/api/car-details/plate/{license_plate}"
-
+    key = config.BGCARS_API_KEY
+    url = f"https://baza-gai.com.ua/nomer/{license_plate}"
     try:
         # Виконуємо GET-запит до сервера
-        response = requests.get(url)
-
+        response = requests.get(url, headers={"Accept": "application/json", "X-Api-Key": key})
         # Перевіряємо, чи отримали ми успішну відповідь
         if response.status_code == 200:
-            car_data = response.json()
+            data = response.json()
+            print(data)
             car_info_by_license_plate = {
                 'plate': license_plate,
-                'brand': f'{car_data[0]["brand"]}',
-                'model': f'{car_data[0]["model"]}',
-                'year': f'{car_data[0]["year"]}',
-                'color': f'{car_data[0]["color"]}',
-                'body': f'{car_data[0]["kind"]}/{car_data[0]["body"]}'
+                'brand': data["vendor"],
+                'model': data["model"],
+                'year': data["model_year"],
+                'color': data["operations"][0]["color"]["ua"],
+                'body': data["operations"][0]["kind"]["ua"]
             }
             return car_info_by_license_plate
         else:

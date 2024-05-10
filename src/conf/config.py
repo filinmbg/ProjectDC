@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     CLOUDINARY_NAME: str = "dv5twoh7a"
     CLOUDINARY_API_KEY: int = 364681612839296
     CLOUDINARY_API_SECRET: str = "qvIQgRo62bsyu-6OmGdcXTB3Oh8"
+    BGCARS_API_KEY: str = "08330252d37dcc578f5881cf3662ea90"
 
     @field_validator("ALGORITHM")
     @classmethod
