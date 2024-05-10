@@ -1,4 +1,7 @@
+# src\schemas\user_schemas.py
+
 from pydantic import BaseModel, EmailStr, Field
+from typing import List
 
 from src.entity.models import Role
 
@@ -30,8 +33,14 @@ class UpdateProfileSchema(BaseModel):
     email: EmailStr
 
 
+class VehicleSchema(BaseModel):
+    plate: str
+    model: str
+
+
 class ProfileSchema(BaseModel):
     username: str
     email: EmailStr
-    plate: str
+    role: Role
     is_blocked: bool
+    vehicles: List[VehicleSchema]
