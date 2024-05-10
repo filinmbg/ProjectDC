@@ -5,7 +5,7 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    DB_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/Parking"
+    DB_URL: str = "postgresql+asyncpg://postgres:1989@localhost:5432/ProjectDC"
     SECRET_KEY_JWT: str = "1234567890"
     ALGORITHM: str = "HS256"
     MAIL_USERNAME: EmailStr = "postgres@meail.com"
@@ -19,9 +19,9 @@ class Settings(BaseSettings):
     # CLD_NAME: str = 'photoshare'
     # CLD_API_KEY: int = 326488457974591
     # CLD_API_SECRET: str = "secret"
-    CLOUDINARY_NAME: str = "dv5twoh7a"
-    CLOUDINARY_API_KEY: int = 364681612839296
-    CLOUDINARY_API_SECRET: str = "qvIQgRo62bsyu-6OmGdcXTB3Oh8"
+    CLOUDINARY_NAME: str = "dknkinnlb"
+    CLOUDINARY_API_KEY: int = 763413813135315
+    CLOUDINARY_API_SECRET: str = "yhMztWViP9KNz7uH71tF2zgTQ_I"
     BGCARS_API_KEY: str = "08330252d37dcc578f5881cf3662ea90"
 
     @field_validator("ALGORITHM")
