@@ -1,8 +1,11 @@
+from typing import List
 import cloudinary
 from fastapi import APIRouter, File, UploadFile, HTTPException, Depends
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from src.repository.payments import calculate_parking_cost, calculate_parking_duration, calculate_total_parking_duration, record_entry_exit_time
 from src.database.db import get_db
-from src.entity.models import Vehicle, User
+from src.entity.models import MovementLog, Vehicle, User
 from src.schemas.vehicles_schemas import VehicleCreate
 from src.conf.config import config
 from src.repository.vehicles import upload_to_cloudinary, car_info_response
@@ -48,3 +51,45 @@ async def create_vehicle(image: UploadFile = File(), owner_id: User = Depends(ge
         raise HTTPException(status_code=500, detail=f"Internal Server Error: {str(e)}")
 
 
+@router.post("/entry-exit/")
+async def record_entry_exit(vehicle_id: int, entry: bool, session: AsyncSession = Depends(get_db)):
+    try:
+        await record_entry_exit_time(session, vehicle_id, entry)
+        return {"message": "Entry/exit time recorded successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/parking-duration/")
+async def calculate_parking_duration_route(movement_log_id: int, session: AsyncSession = Depends(get_db)):
+    try:
+        duration = await calculate_parking_duration(session, movement_log_id)
+        return {"parking_duration_seconds": duration.total_seconds()}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/calculate-parking-cost/{movement_log_id}")
+async def calculate_parking_cost_route(movement_log_id: int, cost_per_hour: int, session: AsyncSession = Depends(get_db)):
+    try:
+        cost = await calculate_parking_cost(session, movement_log_id, cost_per_hour)
+        if cost is not None:
+            return {"cost": cost}
+        else:
+            raise HTTPException(
+                status_code=500, detail="Failed to calculate parking cost")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/calculate-total-parking-duration/{vehicle_id}")
+async def calculate_total_parking_duration_route(vehicle_id: int, session: AsyncSession = Depends(get_db)):
+    try:
+        total_duration = await calculate_total_parking_duration(session, vehicle_id)
+        if total_duration is not None:
+            return {"total_duration": total_duration}
+        else:
+            raise HTTPException(
+                status_code=500, detail="Failed to calculate total parking duration")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
