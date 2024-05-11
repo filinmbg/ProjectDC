@@ -1,9 +1,9 @@
-from fastapi import Depends
+from fastapi import Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.database.db import get_db
-from src.entity.models import User, Role
-from src.schemas.user_schemas import UserSchema
+from src.entity.models import User, Role, Vehicle
+from src.schemas.user_schemas import UserSchema, UserVehicle
 
 
 async def get_user_by_email(email: str, db: AsyncSession = Depends(get_db)):
@@ -20,6 +20,15 @@ async def get_user_by_email(email: str, db: AsyncSession = Depends(get_db)):
     user = await db.execute(stmt)
     user = user.scalar_one_or_none()
     return user
+
+
+async def get_user_vehicles(user_id: int, db: AsyncSession) -> list[UserVehicle]:
+    tquery = select(Vehicle).where(Vehicle.owner_id == user_id)
+    result = await db.execute(tquery)
+    vehicles = result.scalars().all()
+    if vehicles is None:
+        return []
+    return vehicles
 
 
 async def create_user(body: UserSchema, db: AsyncSession = Depends(get_db)):

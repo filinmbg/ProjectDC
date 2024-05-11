@@ -1,25 +1,17 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from typing import List
+from fastapi import APIRouter, HTTPException, Depends, status
+from src.schemas.user_schemas import UserVehicle
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from src.database.db import get_db
-from src.services.auth_service import auth_service
-from src.schemas.user_schemas import UserResponse, ProfileSchema, VehicleSchema
-from src.repository import users as repository_users
+from src.repository import users
 
-router = APIRouter(prefix='/user', tags=['User'])
+router = APIRouter(prefix='/profile', tags=['User'])
 
 
-@router.get("/profile", response_model=ProfileSchema)
-async def get_user_profile(current_user: ProfileSchema = Depends(auth_service.get_current_user),
-                           db: AsyncSession = Depends(get_db)):
-    """
-    Get user profile.
-    """
-    user = await repository_users.get_user_by_email(current_user.email, db)
-    if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+@router.get("/{user_id}/vehicles", response_model=List[UserVehicle])
+async def get_user_vehicles_route(user_id: int, db: AsyncSession = Depends(get_db)):
+    vehicles = await users.get_user_vehicles(user_id, db)
+    if not vehicles:
 
-    vehicles = [VehicleSchema(plate=vehicle.plate, model=vehicle.model) for vehicle in user.vehicles]
-
-    return ProfileSchema(username=current_user.username, email=current_user.email, role=current_user.role,
-                         is_blocked=current_user.is_blocked, vehicles=vehicles)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found or has no vehicles")
+    return vehicles

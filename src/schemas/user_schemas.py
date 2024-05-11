@@ -1,8 +1,7 @@
 # src\schemas\user_schemas.py
 
 from pydantic import BaseModel, EmailStr, Field
-from typing import List
-
+from typing import List, Optional
 from src.entity.models import Role
 
 
@@ -33,14 +32,16 @@ class UpdateProfileSchema(BaseModel):
     email: EmailStr
 
 
-class VehicleSchema(BaseModel):
+class UserVehicle(BaseModel):
+    id: int
     plate: str
+    brand: str
     model: str
-
-
-class ProfileSchema(BaseModel):
-    username: str
-    email: EmailStr
-    role: Role
+    year: int
+    color: str
+    body: str
+    plate_photo: str
     is_blocked: bool
-    vehicles: List[VehicleSchema]
+
+    class Config:
+        from_attributes = True

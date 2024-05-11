@@ -35,13 +35,13 @@ async def custom_middleware(request: Request, call_next):
 
 
 BASE_DIR = pathlib.Path(__file__).parent
-# app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
+app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 templates = Jinja2Templates(directory='templates')
 
 
-# @app.get("/", response_class=HTMLResponse, description="Project DC", tags=["Main index.html"])
-# async def root(request: Request):
-#     return templates.TemplateResponse('index.html', {"request": request, "title": "Project DC"})
+@app.get("/", response_class=HTMLResponse, description="Project DC", tags=["Main index.html"])
+async def root(request: Request):
+    return templates.TemplateResponse('index.html', {"request": request, "title": "Project DC"})
 
 
 @app.get("/api/healthchecker", tags=["Tools"])
