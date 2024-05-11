@@ -67,8 +67,6 @@ app.include_router(vehicles_routes.router)
 async def add_parking_record(record: ParkingRecord, parking_records=None):
     parking_records.append(record)
     if record.total_cost > 100 and not record.notified:
-        # Send notification to user
-        # Example: send_notification(record.user_id, "Parking costs exceeded the limit.")
         record.notified = True
     return {"message": "Parking record added successfully"}
 
