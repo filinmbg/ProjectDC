@@ -17,17 +17,17 @@ async def calculate_parking_duration(session, movement_log_id: int):
         raise ValueError("Failed to calculate parking duration: " + str(e))
 
 
-
-async def record_entry_exit_time(session, vehicle_id: int, entry: bool):
+async def record_entry_exit_time(session, vehicle_id: int, entry: bool, user_id: int = None):
     try:
         if entry:
             # If it's an entry, create a new MovementLog entry with entry_time set to current time
-            movement_log = MovementLog(
-                vehicle_id=vehicle_id, entry_time=func.now())
+            movement_log = MovementLog(vehicle_id=vehicle_id, entry_time=func.now(), user_id=user_id)
             session.add(movement_log)
         else:
             # If it's an exit, find the latest MovementLog for the vehicle and update its exit_time to current time
-            latest_log = await session.execute(select(MovementLog).filter(MovementLog.vehicle_id == vehicle_id).order_by(desc(MovementLog.entry_time)).limit(1))
+            latest_log = await session.execute(
+                select(MovementLog).filter(MovementLog.vehicle_id == vehicle_id).order_by(
+                    desc(MovementLog.entry_time)).limit(1))
             latest_log = latest_log.scalar_one_or_none()
             if latest_log:
                 latest_log.exit_time = func.now()
@@ -68,13 +68,14 @@ async def calculate_total_parking_duration(session, vehicle_id: int):
     try:
         total_duration = 0
         movement_logs = await session.execute(select(MovementLog).filter(MovementLog.vehicle_id == vehicle_id))
-
+        movement_logs = movement_logs.scalars().all()
         # Перевіряємо, чи є записи для вказаного автомобіля
         if movement_logs:
             for log in movement_logs:
-                # Додати тривалість паркування з кожного запису
-                total_duration += await calculate_parking_duration(session, log.id)
-            return total_duration
+                parking_duration = await calculate_parking_duration(session, log.id)
+                total_seconds = parking_duration.days * 24 * 60 * 60 + parking_duration.seconds + parking_duration.microseconds / 1000000
+                total_duration += int(total_seconds)
+            return total_duration / 3600
         else:
             # Якщо немає записів, повернути 0
             return total_duration

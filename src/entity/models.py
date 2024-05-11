@@ -85,6 +85,6 @@ class Payment(Base):
     user_id = Column(Integer, ForeignKey("users.id"))
     cost_per_hour = Column(Integer)
     amount = Column(Integer)
-    payment_datetime = Column(DateTime, default=func.now())
+    payment_datetime = Column("payment_datetime", DateTime, default=func.now())
 
     user = relationship("User", back_populates="payments")
