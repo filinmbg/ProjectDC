@@ -83,6 +83,7 @@ class Payment(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
+    cost_per_hour = Column(Integer)
     amount = Column(Integer)
     payment_datetime = Column(DateTime, default=func.now())
 
