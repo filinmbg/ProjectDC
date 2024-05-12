@@ -327,3 +327,44 @@ async def get_vehicle_info_by_plate(plate: str, session: AsyncSession) -> dict:
         "vehicle_info": vehicle_info,
         "movement_logs": movement_logs_info
     }
+
+
+async def get_vehicle_info_by_plate(plate: str, session: AsyncSession) -> dict:
+
+    vehicle_result = await session.execute(select(Vehicle).filter(Vehicle.plate == plate))
+    vehicle = vehicle_result.scalars().first()
+    if not vehicle:
+        return {"error": "Vehicle not found"}
+
+    movement_logs_result = await session.execute(select(MovementLog).filter(MovementLog.vehicle_id == vehicle.id))
+    movement_logs = movement_logs_result.scalars().all()
+
+    vehicle_info = {
+        "id": vehicle.id,
+        "plate": vehicle.plate,
+        "brand": vehicle.brand,
+        "model": vehicle.model,
+        "year": vehicle.year,
+        "color": vehicle.color,
+        "body": vehicle.body,
+        "plate_photo": vehicle.plate_photo,
+        "is_blocked": vehicle.is_blocked
+    }
+
+    movement_logs_info = []
+    for movement_log in movement_logs:
+        movement_log_info = {
+            "id": movement_log.id,
+            "user_id": movement_log.user_id,
+            "vehicle_id": movement_log.vehicle_id,
+            "entry_time": movement_log.entry_time,
+            "exit_time": movement_log.exit_time,
+            "parking_spot_id": movement_log.parking_spot_id,
+            "status": movement_log.status
+        }
+        movement_logs_info.append(movement_log_info)
+
+    return {
+        "vehicle_info": vehicle_info,
+        "movement_logs": movement_logs_info
+    }

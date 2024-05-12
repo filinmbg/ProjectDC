@@ -71,8 +71,8 @@ async def record_entry_exit(vehicle_id: int, entry: bool, session: AsyncSession 
 async def calculate_parking_duration_route(movement_log_id: int, session: AsyncSession = Depends(get_db)):
     try:
         duration = await calculate_parking_duration(session, movement_log_id)
-        total_duration = await convert_seconds_to_time(duration)
-        return {"parking_duration": total_duration}
+        total_seconds = duration.total_seconds()
+        return await convert_seconds_to_time(int(total_seconds))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -136,3 +136,10 @@ async def export_payment_report_for_vehicle(vehicle_id: int, session: AsyncSessi
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
+@router.get("/vehicles/{plate}", response_model=dict)
+async def get_vehicle_info_route(plate: str, session: AsyncSession = Depends(get_db)):
+    vehicle_info = await get_vehicle_info_by_plate(plate, session)
+    if "error" in vehicle_info:
+        raise HTTPException(status_code=404, detail=vehicle_info["error"])
+    return vehicle_info
