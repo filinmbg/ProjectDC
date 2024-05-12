@@ -1,5 +1,14 @@
-from src.entity.models import MovementLog, Payment
+from datetime import datetime
+import csv
+from typing import List
+from src.entity.models import MovementLog, Payment, User, Vehicle
 from sqlalchemy import func, select, desc
+
+
+async def convert_seconds_to_time(seconds: int) -> str:
+    hours, remainder = divmod(seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    return f"{hours} годин {minutes} хвилин {seconds} секунд"
 
 
 async def calculate_parking_duration(session, movement_log_id: int):
@@ -75,7 +84,7 @@ async def calculate_total_parking_duration(session, vehicle_id: int):
                 parking_duration = await calculate_parking_duration(session, log.id)
                 total_seconds = parking_duration.days * 24 * 60 * 60 + parking_duration.seconds + parking_duration.microseconds / 1000000
                 total_duration += int(total_seconds)
-            return total_duration / 3600
+            return await convert_seconds_to_time(total_duration)
         else:
             # Якщо немає записів, повернути 0
             return total_duration
@@ -83,3 +92,63 @@ async def calculate_total_parking_duration(session, vehicle_id: int):
         # В разі виникнення помилки повернути None та зареєструвати помилку для подальшого аналізу
         print(f"Failed to calculate total parking duration: {str(e)}")
         return None
+
+
+async def generate_payment_report(session):
+    try:
+        # Отримати список оплат з бази даних
+        payments = await session.execute(select(Payment))
+        payments = payments.scalars().all()
+
+        # Створити ім'я файлу звіту з поточною датою та часом
+        report_file_name = f"payment_report_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.csv"
+
+        # Відкрити CSV-файл для запису
+        with open(report_file_name, mode='w', newline='') as file:
+            writer = csv.writer(file)
+
+            # Записати заголовки стовпців у файл
+            writer.writerow(
+                ["Payment ID", "User ID", "Cost per Hour", "Amount", "Payment Datetime"])
+
+            # Записати дані про оплати у файл
+            for payment in payments:
+                writer.writerow([payment.id, payment.user_id, payment.cost_per_hour,
+                                payment.amount, payment.payment_datetime])
+
+        return report_file_name
+    except Exception as e:
+        # В разі виникнення помилки повернути None та зареєструвати помилку для подальшого аналізу
+        print(f"Failed to generate payment report: {str(e)}")
+        return None
+
+
+
+async def generate_payment_report_for_vehicle(session, vehicle_id: int) -> str:
+    try:
+        # Отримуємо список оплат для вказаного автомобіля
+        payments: List[Payment] = await session.execute(
+            select(Payment).join(User).join(
+                Vehicle).filter(Vehicle.id == vehicle_id)
+        )
+
+        # Створюємо ім'я файлу для звіту
+        file_name = f"payment_report_for_vehicle_{vehicle_id}.csv"
+
+        # Відкриваємо файл для запису у форматі CSV
+        with open(file_name, mode='w', newline='') as file:
+            writer = csv.writer(file)
+
+            # Записуємо заголовки у файл
+            writer.writerow(
+                ['Payment ID', 'User ID', 'Cost Per Hour', 'Amount', 'Payment Datetime'])
+
+            # Записуємо дані про кожну оплату у файл
+            for payment in payments:
+                writer.writerow([payment.id, payment.user_id, payment.cost_per_hour,
+                                payment.amount, payment.payment_datetime])
+
+        return file_name
+    except Exception as e:
+        raise ValueError(
+            f"Failed to generate payment report for vehicle: {str(e)}")

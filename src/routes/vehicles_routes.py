@@ -1,8 +1,12 @@
 import cloudinary
 from fastapi import APIRouter, File, UploadFile, HTTPException, Depends
+
+from fastapi.responses import FileResponse
+from sqlalchemy import select
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.repository.payments import calculate_parking_cost, calculate_parking_duration, \
-    calculate_total_parking_duration, record_entry_exit_time
+    calculate_total_parking_duration, convert_seconds_to_time, generate_payment_report, generate_payment_report_for_vehicle, record_entry_exit_time
 from src.database.db import get_db
 from src.entity.models import MovementLog, Vehicle, User
 from src.schemas.vehicles_schemas import VehicleCreate
@@ -67,7 +71,8 @@ async def record_entry_exit(vehicle_id: int, entry: bool, session: AsyncSession 
 async def calculate_parking_duration_route(movement_log_id: int, session: AsyncSession = Depends(get_db)):
     try:
         duration = await calculate_parking_duration(session, movement_log_id)
-        return {"parking_duration_seconds": duration.total_seconds()}
+        total_duration = await convert_seconds_to_time(duration)
+        return {"parking_duration": total_duration}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -99,9 +104,35 @@ async def calculate_total_parking_duration_route(vehicle_id: int, session: Async
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/vehicles/{plate}", response_model=dict)
-async def get_vehicle_info_route(plate: str, session: AsyncSession = Depends(get_db)):
-    vehicle_info = await get_vehicle_info_by_plate(plate, session)
-    if "error" in vehicle_info:
-        raise HTTPException(status_code=404, detail=vehicle_info["error"])
-    return vehicle_info
+
+@router.get("/payment/report")
+async def export_payment_report(session: AsyncSession = Depends(get_db)):
+    try:
+        # Викликаємо функцію генерації звіту про розрахунки
+        report_file_name = await generate_payment_report(session)
+
+        # Перевіряємо, чи був успішно створений звіт
+        if report_file_name:
+            return FileResponse(report_file_name, filename=report_file_name, media_type='text/csv')
+        else:
+            raise HTTPException(
+                status_code=500, detail="Failed to generate payment report")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/payment/report/{vehicle_id}")
+async def export_payment_report_for_vehicle(vehicle_id: int, session: AsyncSession = Depends(get_db)):
+    try:
+        # Викликаємо функцію генерації звіту про розрахунки для конкретного автомобіля
+        report_file_name = await generate_payment_report_for_vehicle(session, vehicle_id)
+
+        # Перевіряємо, чи був успішно створений звіт
+        if report_file_name:
+            return FileResponse(report_file_name, filename=report_file_name, media_type='text/csv')
+        else:
+            raise HTTPException(
+                status_code=500, detail="Failed to generate payment report for vehicle")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
