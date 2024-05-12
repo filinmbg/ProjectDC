@@ -1,8 +1,9 @@
-from typing import List
 import cloudinary
 from fastapi import APIRouter, File, UploadFile, HTTPException, Depends
+
 from fastapi.responses import FileResponse
 from sqlalchemy import select
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.repository.payments import calculate_parking_cost, calculate_parking_duration, \
     calculate_total_parking_duration, convert_seconds_to_time, generate_payment_report, generate_payment_report_for_vehicle, record_entry_exit_time
@@ -10,7 +11,7 @@ from src.database.db import get_db
 from src.entity.models import MovementLog, Vehicle, User
 from src.schemas.vehicles_schemas import VehicleCreate
 from src.conf.config import config
-from src.repository.vehicles import upload_to_cloudinary, car_info_response
+from src.repository.vehicles import upload_to_cloudinary, car_info_response, get_vehicle_info_by_plate
 from src.services.auth_service import get_current_user
 
 cloudinary.config(
@@ -103,6 +104,7 @@ async def calculate_total_parking_duration_route(vehicle_id: int, session: Async
         raise HTTPException(status_code=500, detail=str(e))
 
 
+
 @router.get("/payment/report")
 async def export_payment_report(session: AsyncSession = Depends(get_db)):
     try:
@@ -133,3 +135,4 @@ async def export_payment_report_for_vehicle(vehicle_id: int, session: AsyncSessi
                 status_code=500, detail="Failed to generate payment report for vehicle")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
