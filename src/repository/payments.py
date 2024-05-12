@@ -123,7 +123,6 @@ async def generate_payment_report(session):
         return None
 
 
-
 async def generate_payment_report_for_vehicle(session, vehicle_id: int) -> str:
     try:
         # Отримуємо список оплат для вказаного автомобіля
@@ -131,6 +130,7 @@ async def generate_payment_report_for_vehicle(session, vehicle_id: int) -> str:
             select(Payment).join(User).join(
                 Vehicle).filter(Vehicle.id == vehicle_id)
         )
+        payments = payments.scalars().all()
 
         # Створюємо ім'я файлу для звіту
         file_name = f"payment_report_for_vehicle_{vehicle_id}.csv"
@@ -145,10 +145,15 @@ async def generate_payment_report_for_vehicle(session, vehicle_id: int) -> str:
 
             # Записуємо дані про кожну оплату у файл
             for payment in payments:
-                writer.writerow([payment.id, payment.user_id, payment.cost_per_hour,
-                                payment.amount, payment.payment_datetime])
+                try:
+                    writer.writerow([payment.id, payment.user_id, payment.cost_per_hour,
+                                     payment.amount, payment.payment_datetime])
+                except Exception as e:
+                    print(f"Failed to write payment data to CSV: {str(e)}")
 
         return file_name
     except Exception as e:
         raise ValueError(
             f"Failed to generate payment report for vehicle: {str(e)}")
+
+
