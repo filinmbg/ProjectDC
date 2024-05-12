@@ -1,7 +1,5 @@
-from typing import List
 import cloudinary
 from fastapi import APIRouter, File, UploadFile, HTTPException, Depends
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.repository.payments import calculate_parking_cost, calculate_parking_duration, \
     calculate_total_parking_duration, record_entry_exit_time
@@ -9,7 +7,7 @@ from src.database.db import get_db
 from src.entity.models import MovementLog, Vehicle, User
 from src.schemas.vehicles_schemas import VehicleCreate
 from src.conf.config import config
-from src.repository.vehicles import upload_to_cloudinary, car_info_response
+from src.repository.vehicles import upload_to_cloudinary, car_info_response, get_vehicle_info_by_plate
 from src.services.auth_service import get_current_user
 
 cloudinary.config(
@@ -99,3 +97,11 @@ async def calculate_total_parking_duration_route(vehicle_id: int, session: Async
                 status_code=500, detail="Failed to calculate total parking duration")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/vehicles/{plate}", response_model=dict)
+async def get_vehicle_info_route(plate: str, session: AsyncSession = Depends(get_db)):
+    vehicle_info = await get_vehicle_info_by_plate(plate, session)
+    if "error" in vehicle_info:
+        raise HTTPException(status_code=404, detail=vehicle_info["error"])
+    return vehicle_info
