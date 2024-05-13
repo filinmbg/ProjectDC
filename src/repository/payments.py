@@ -49,17 +49,18 @@ async def record_entry_exit_time(session, vehicle_id: int, entry: bool, user_id:
         return {"detail": str(e)}
 
 
-async def calculate_parking_cost(session, movement_log_id: int, cost_per_hour: int):
+async def calculate_parking_cost(session, movement_log_id: int, cost_per_hour=10, free_time=3600):
     try:
         # Отримати запис MovementLog з бази даних за допомогою session.get()
         movement_log = await session.get(MovementLog, movement_log_id)
 
         # Обчислити тривалість паркування за допомогою вже існуючої функції
         duration = await calculate_parking_duration(session, movement_log_id)
-
-        # Обчислити вартість паркування на основі тривалості та вартості за годину
-        cost = (duration.total_seconds() / 3600) * cost_per_hour
-
+        if duration.total_seconds() > free_time:
+            # Обчислити вартість паркування на основі тривалості та вартості за годину
+            cost = (duration.total_seconds() - free_time) / 3600 * cost_per_hour
+        else:
+            cost = 0
         # Оновити запис оплати з обчисленою сумою
         payment = Payment(user_id=movement_log.user_id,
                           cost_per_hour=cost_per_hour, amount=cost)
@@ -114,7 +115,7 @@ async def generate_payment_report(session):
             # Записати дані про оплати у файл
             for payment in payments:
                 writer.writerow([payment.id, payment.user_id, payment.cost_per_hour,
-                                payment.amount, payment.payment_datetime])
+                                 payment.amount, payment.payment_datetime])
 
         return report_file_name
     except Exception as e:
@@ -155,5 +156,3 @@ async def generate_payment_report_for_vehicle(session, vehicle_id: int) -> str:
     except Exception as e:
         raise ValueError(
             f"Failed to generate payment report for vehicle: {str(e)}")
-
-

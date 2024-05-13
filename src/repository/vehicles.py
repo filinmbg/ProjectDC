@@ -10,6 +10,8 @@ from tensorflow.keras.models import load_model
 from src.conf.config import config
 from sqlalchemy import select
 
+from src.repository.payments import calculate_parking_cost
+
 # Визначення шляхів для завантаження ресурсів
 models_file_path = 'src/models'
 file_model = 'ua-license-plate-recognition-model-37x.h5'
@@ -296,6 +298,7 @@ async def get_vehicle_info_by_plate(plate: str, session: AsyncSession) -> dict:
     movement_logs_result = await session.execute(select(MovementLog).filter(MovementLog.vehicle_id == vehicle.id))
     movement_logs = movement_logs_result.scalars().all()
 
+
     # Створимо об'єкт Pydantic для інформації про автомобіль
     vehicle_info = {
         "id": vehicle.id,
@@ -323,48 +326,11 @@ async def get_vehicle_info_by_plate(plate: str, session: AsyncSession) -> dict:
         }
         movement_logs_info.append(movement_log_info)
 
-    return {
-        "vehicle_info": vehicle_info,
-        "movement_logs": movement_logs_info
-    }
-
-
-async def get_vehicle_info_by_plate(plate: str, session: AsyncSession) -> dict:
-
-    vehicle_result = await session.execute(select(Vehicle).filter(Vehicle.plate == plate))
-    vehicle = vehicle_result.scalars().first()
-    if not vehicle:
-        return {"error": "Vehicle not found"}
-
-    movement_logs_result = await session.execute(select(MovementLog).filter(MovementLog.vehicle_id == vehicle.id))
-    movement_logs = movement_logs_result.scalars().all()
-
-    vehicle_info = {
-        "id": vehicle.id,
-        "plate": vehicle.plate,
-        "brand": vehicle.brand,
-        "model": vehicle.model,
-        "year": vehicle.year,
-        "color": vehicle.color,
-        "body": vehicle.body,
-        "plate_photo": vehicle.plate_photo,
-        "is_blocked": vehicle.is_blocked
-    }
-
-    movement_logs_info = []
-    for movement_log in movement_logs:
-        movement_log_info = {
-            "id": movement_log.id,
-            "user_id": movement_log.user_id,
-            "vehicle_id": movement_log.vehicle_id,
-            "entry_time": movement_log.entry_time,
-            "exit_time": movement_log.exit_time,
-            "parking_spot_id": movement_log.parking_spot_id,
-            "status": movement_log.status
-        }
-        movement_logs_info.append(movement_log_info)
+    payment = await calculate_parking_cost(session, movement_logs[-1].id)
+    print(payment)
 
     return {
         "vehicle_info": vehicle_info,
-        "movement_logs": movement_logs_info
+        "movement_logs": movement_logs_info,
+        "payment": payment,
     }

@@ -6,7 +6,8 @@ from sqlalchemy import select
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.repository.payments import calculate_parking_cost, calculate_parking_duration, \
-    calculate_total_parking_duration, convert_seconds_to_time, generate_payment_report, generate_payment_report_for_vehicle, record_entry_exit_time
+    calculate_total_parking_duration, convert_seconds_to_time, generate_payment_report, \
+    generate_payment_report_for_vehicle, record_entry_exit_time
 from src.database.db import get_db
 from src.entity.models import MovementLog, Vehicle, User
 from src.schemas.vehicles_schemas import VehicleCreate
@@ -16,7 +17,6 @@ from src.services.auth_service import get_current_user
 from src.services.role_service import Role, RoleAccess
 
 admin_access = RoleAccess([Role.admin])
-
 
 cloudinary.config(
     cloud_name=config.CLOUDINARY_NAME,
@@ -31,14 +31,11 @@ router = APIRouter(tags=['Vehicle'])
 async def create_vehicle(image: UploadFile = File(), owner_id: User = Depends(get_current_user),
                          db: AsyncSession = Depends(get_db)):
     try:
-        if owner_id.role != Role.admin:
-            raise HTTPException(status_code=403, detail="Forbidden, you do not have administrator rights")
-
         contents = await image.read()
         cloudinary_response = upload_to_cloudinary(contents)
         plate_info = await car_info_response(cloudinary_response['url'])
         if plate_info is None:
-            raise HTTPException(status_code=404, detail="Plate information not found")
+            return {"404": "Plate information not found"}
         vehicle_data = VehicleCreate(
             plate=plate_info['plate'],
             brand=plate_info['brand'],
@@ -111,7 +108,6 @@ async def calculate_total_parking_duration_route(vehicle_id: int, session: Async
         raise HTTPException(status_code=500, detail=str(e))
 
 
-
 @router.get("/payment/report", status_code=201, dependencies=[Depends(admin_access)])
 async def export_payment_report(session: AsyncSession = Depends(get_db)):
     try:
@@ -144,7 +140,7 @@ async def export_payment_report_for_vehicle(vehicle_id: int, session: AsyncSessi
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/vehicles/{plate}", response_model=dict, status_code=201, dependencies=[Depends(admin_access)])
+@router.get("/vehicles/{plate}", response_model=dict)
 async def get_vehicle_info_route(plate: str, session: AsyncSession = Depends(get_db)):
     vehicle_info = await get_vehicle_info_by_plate(plate, session)
     if "error" in vehicle_info:
