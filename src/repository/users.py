@@ -68,3 +68,27 @@ async def update_token(user: User, token: str | None, db: AsyncSession):
     """
     user.refresh_token = token
     await db.commit()
+
+
+async def delete_user(db: AsyncSession, user_id: int):
+    """
+    Delete a user by ID.
+    """
+    user = await db.get(User, user_id)
+    if user:
+        await db.delete(user)
+        await db.commit()
+        return True
+    return False
+
+
+async def update_user_name(db: AsyncSession, user_id: int, new_name: str):
+    """
+    Update user's name by ID.
+    """
+    user = await db.get(User, user_id)
+    if user:
+        user.username = new_name
+        await db.commit()
+        return True
+    return False
