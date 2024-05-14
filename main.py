@@ -1,18 +1,24 @@
+import asyncio
+from datetime import datetime, timedelta
+
 from fastapi import FastAPI, Depends, HTTPException, Request
 
 from fastapi.responses import HTMLResponse, JSONResponse
 
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from sqlalchemy import text
+from sendgrid import Mail, SendGridAPIClient
+from sqlalchemy import text, select, or_
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from src.conf.config import config
 from src.database.db import get_db
+from src.entity.models import MovementLog, User
 from src.routes import auth_routes, vehicles_routes, user_routes
 import time
 
 import pathlib
-
 
 app = FastAPI()
 
@@ -58,7 +64,57 @@ async def healthchecker(db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=500, detail="Error connecting to the database")
 
 
+@app.on_event("startup")
+async def startup_event():
+    async for db in get_db():
+        await asyncio.create_task(notice_users_parking_duration(db))
+
+
+async def notice_users_parking_duration(session):
+    while True:
+        print("Пошук користувачів у яких закінчується час безкоштовної години на парковці...")
+        movement_logs = await session.execute(
+            select(MovementLog).filter(or_(
+                MovementLog.status != "+",
+                MovementLog.status.is_(None)
+            ))
+        )
+        movement_logs = movement_logs.scalars().all()
+        for log in movement_logs:
+            if datetime.now() - log.entry_time > timedelta(hours=1):
+                user = await session.execute(select(User).filter(User.id == log.user_id))
+                user = user.scalars().first()
+                if user:
+                    notification_message = f"Шановний {user.username},\n\nМи хочемо повідомити Вам, що час безкоштовної години на парковці закінчився. Якщо Ви продовжите перебування на парковці, буде нарахована плата за додатковий час.\n\nЗ повагою,\nКоманда парковки"
+                    send_email("dizir7772@ukr.net", user.email, "Сповіщення", notification_message)
+            log.status = "+"
+            session.add(log)
+            await session.commit()
+        print("Користувачів не знайдено...")
+        await asyncio.sleep(60)
+
+
+def send_email(sender_email, recipient_email, subject, message):
+    sg_api_key = config.TWILIO_API_KEY_EMAIL_SENDER
+    if not sg_api_key:
+        print("Не знайдено API ключ SendGrid.")
+        return
+    try:
+        mail = Mail(
+            from_email=sender_email,
+            to_emails=recipient_email,
+            subject=subject,
+            plain_text_content=message)
+        sg = SendGridAPIClient(sg_api_key)
+        response = sg.send(mail)
+        if response.status_code == 202:
+            print(f"Повідомлення успішно надіслано на {recipient_email}.")
+        else:
+            print("Помилка під час надсилання повідомлення. Код відповіді:", response.status_code)
+    except Exception as e:
+        print("Виникла помилка при відправленні повідомлення:", str(e))
+
+
 app.include_router(auth_routes.router, prefix="/api")
 app.include_router(vehicles_routes.router)
 app.include_router(user_routes.router)
-
