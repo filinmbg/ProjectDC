@@ -1,5 +1,12 @@
+import asyncio
+from datetime import datetime, timedelta
 from typing import List
 from fastapi import APIRouter, HTTPException, Depends, status
+from sendgrid import Mail, SendGridAPIClient
+from sqlalchemy import select, or_
+
+from src.conf.config import config
+from src.entity.models import MovementLog, User
 from src.schemas.user_schemas import UserVehicle
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.database.db import get_db
@@ -24,7 +31,6 @@ async def get_user_vehicles_route(user_id: int, db: AsyncSession = Depends(get_d
 
 @router.delete("/{user_id}", dependencies=[Depends(access_admin)])
 async def delete_user(user_id: int, db: AsyncSession = Depends(get_db)):
-
     deleted = await users_repository.delete_user(db, user_id)
     if not deleted:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")

@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     CLOUDINARY_API_KEY: int = 763413813135315
     CLOUDINARY_API_SECRET: str = "yhMztWViP9KNz7uH71tF2zgTQ_I"
     BGCARS_API_KEY: str = "08330252d37dcc578f5881cf3662ea90"
-    TWILIO_API_KEY_EMAIL_SENDER: str = "гіт не пропускає"  # API TWILIO для надсилання повідомлень
+    TWILIO_API_KEY_EMAIL_SENDER: str = "токен в тг буде"  # API TWILIO для надсилання повідомлень
     @field_validator("ALGORITHM")
     @classmethod
     def validate_algorithm(cls, v: Any):
