@@ -4,7 +4,6 @@ from typing import List
 from src.entity.models import MovementLog, Payment, User, Vehicle
 from sqlalchemy import func, select, desc
 
-
 async def convert_seconds_to_time(seconds: int) -> str:
     hours, remainder = divmod(seconds, 3600)
     minutes, seconds = divmod(remainder, 60)
@@ -19,7 +18,7 @@ async def calculate_parking_duration(session, movement_log_id: int):
             duration = movement_log.exit_time - movement_log.entry_time
         else:
             # Якщо немає часу виїзду, обчислити різницю між поточним часом та часом в'їзду
-            duration = func.now() - movement_log.entry_time
+            duration = datetime.now() - movement_log.entry_time
         return duration
     except Exception as e:
         # Обробка помилок та повернення загального повідомлення про помилку
@@ -30,7 +29,7 @@ async def record_entry_exit_time(session, vehicle_id: int, entry: bool, user_id:
     try:
         if entry:
             # If it's an entry, create a new MovementLog entry with entry_time set to current time
-            movement_log = MovementLog(vehicle_id=vehicle_id, entry_time=func.now(), user_id=user_id)
+            movement_log = MovementLog(vehicle_id=vehicle_id, entry_time=datetime.now(), user_id=user_id)
             session.add(movement_log)
         else:
             # If it's an exit, find the latest MovementLog for the vehicle and update its exit_time to current time
@@ -39,7 +38,7 @@ async def record_entry_exit_time(session, vehicle_id: int, entry: bool, user_id:
                     desc(MovementLog.entry_time)).limit(1))
             latest_log = latest_log.scalar_one_or_none()
             if latest_log:
-                latest_log.exit_time = func.now()
+                latest_log.exit_time = datetime.now()
             else:
                 raise ValueError("No entry record found for the vehicle")
         await session.commit()
